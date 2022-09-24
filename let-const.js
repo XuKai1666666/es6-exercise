@@ -257,8 +257,80 @@ if (true)
 // 而是变量指向的那个内存地址所保存的数据不得改动。
 // 对于简单类型的数据（数值、字符串、布尔值），
 // 值就保存在变量指向的那个内存地址，因此等同于常量。
+
 // 但对于复合类型的数据（主要是对象和数组），变量指向的内存地址，
 // 保存的只是一个指向实际数据的指针，
 // const只能保证这个指针是固定的（即总是指向另一个固定的地址），
 // 至于它指向的数据结构是不是可变的，就完全不能控制了。
 // 因此，将一个对象声明为常量必须非常小心。
+
+const foo = {};
+// 为 foo 添加一个属性，可以成功
+foo.prop = 123;
+foo.prop // 123
+
+// 将 foo 指向另一个对象，就会报错
+foo = {}; // TypeError: "foo" is read-only
+// 常量foo储存的是一个地址，这个地址指向一个对象。不可变的只是这个地址，
+// 即不能把foo指向另一个地址，但对象本身是可变的，所以依然可以为其添加新属性。
+
+const a = [];
+a.push('Hello'); // 可执行
+a.length = 0;    // 可执行
+a = ['Dave'];    // 报错
+// 上面代码中，常量a是一个数组，
+// 这个数组本身是可写的，但是如果将另一个数组赋值给a，就会报错。
+
+
+
+// 顶层对象的属性
+// 顶层对象，在浏览器环境指的是window对象
+// ，在 Node 指的是global对象。ES5 之中，顶层对象的属性与全局变量是等价的。
+window.a = 1;
+a // 1
+
+a = 2;
+window.a // 2
+
+// window对象有实体含义，
+// 指的是浏览器的窗口对象，顶层对象是一个有实体含义的对象，也是不合适的。
+
+// globalThis 对象
+// --浏览器里面，顶层对象是window，但 Node 和 Web Worker 没有window。
+// --浏览器和 Web Worker 里面，self也指向顶层对象，但是 Node 没有self。
+// --Node 里面，顶层对象是global，但其他环境都不支持。
+
+// 全局环境中，this会返回顶层对象。
+// 但是，Node.js 模块中this返回的是当前模块，
+// ES6 模块中this返回的是undefined。
+// 函数里面的this，如果函数不是作为对象的方法运行，
+// 而是单纯作为函数运行，this会指向顶层对象。
+// 但是，严格模式下，这时this会返回undefined。
+// 不管是严格模式，还是普通模式，new Function('return this')()，
+// 总是会返回全局对象。但是，如果浏览器用了 CSP（Content Security Policy，内容安全策略）
+// ，那么eval、new Function这些方法都可能无法使用。
+
+// 综上所述，很难找到一种方法，
+// 可以在所有情况下，都取到顶层对象。下面是两种勉强可以使用的方法。
+// 方法一
+(typeof window !== 'undefined'
+   ? window
+   : (typeof process === 'object' &&
+      typeof require === 'function' &&
+      typeof global === 'object')
+     ? global
+     : this);
+
+// 方法二
+var getGlobal = function () {
+  if (typeof self !== 'undefined') { return self; }
+  if (typeof window !== 'undefined') { return window; }
+  if (typeof global !== 'undefined') { return global; }
+  throw new Error('unable to locate global object');
+};
+// ES2020 在语言标准的层面，引入globalThis作为顶层对象。
+// 也就是说，任何环境下，globalThis都是存在的，
+// 都可以从它拿到顶层对象，指向全局环境下的this。
+// 垫片库global-this模拟了这个提案，可以在所有环境拿到globalThis。
+
+
