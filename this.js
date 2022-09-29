@@ -133,3 +133,142 @@ console.log(o2.fn)
 
 // this指向最后调用它的对象。
 // 在上面的代码中，提前进行了赋值操作，将函数fn挂载到o2对象上，fn最终作为o2对象的方法被调用。
+
+
+
+//通过bind、call、apply改变this指向
+// 以上方法的区别
+
+// 它们都是用来改变相关函数this指向，但是call和apply是直接进行相关函数调用的；
+// bind不会执行相关函数，而是返回一个新的函数，这个新的函数已经自动绑定了新的this指向，开发者可以手动调用它。
+// 再说的具体一点，就是call和apply之间的区别主要体现在参数设定上
+
+// 代码总结的区别
+
+//1 
+const target{}
+fn.call(target,'arg1','arg2')
+
+//2
+const target{}
+fn.apply(target,['arg1','arg2'])
+
+//3
+const target{}
+fn.bind(target,'arg1','arg2')()
+
+
+
+const foo={
+    name:'lucas',
+    logName:function(){
+        console.log(this.name)
+    }
+}
+const bar={
+    name:'mike'
+}
+console.log(foo.logName.call(bar))
+
+//mike
+
+
+
+
+
+//构造函数和this
+function Foo(){
+    this.bar="lucas"
+}
+const instance=new Foo()
+console.log(instance.bar)
+//lucas
+
+// new操作符调用构造函数时具体做了什么？
+// 1.创建一个新的对象
+// 2.将构造函数的this指向这个新的对象
+// 3.为这个对象添加属性、方法等。
+// 4.最终返回新的对象。
+// ↓代码表述
+var obj={}
+obj._proto_=Foo.prototype
+Foo.call(obj)
+
+// 如果在构造函数中出现了显式return的情况，可分为以下2中场景。
+
+// 场景1
+function Foo(){
+    this.user="lucas"
+    const o={}
+    return o
+}
+const instance=new Foo()
+console.log(instance.user)
+// undefined
+
+//场景2
+function Foo(){
+    this.user="lucas"
+    return 1
+}
+const instance=new Foo()
+console.log(instance.user)
+// lucas
+// 如果构造函数中显式返回一个值，且返回的是一个对象（返回复杂类型）,那么this就指向这个返回对的对象；
+// 如果返回的不是一个对象（返回基本类型），那么this仍然指向实例。
+
+
+
+
+
+// 显式与隐式
+// 显式原型：prototype
+// 隐式原型：__proto__
+
+// 在js中万物皆对象，方法(Function)是对象，方法的原型（Function.prototype）是对象，
+
+// 对象具有属性（__proto__）称为隐式原型，对象的隐式原型指向构造该对象的构造函数的显式原型。
+// 方法(Function)是一个特殊的对象，除了和其他对象一样具有__proto__属性以外，
+// 它还有一个自己特有的原型属性(prototype)，这个属性是一个指针，指向原型对象。
+// 原型对象也有一个属性叫constructor，这个属性包含一个指针，指向原构造函数。
+
+// 注意：通过Function.prototype.bind方法构造出来的函数没有prototype属性。
+// 注意：Object.prototype.这个对象的是个例外，它的__proto__值为null。
+
+// 2.二者的关系
+// 隐式原型指向创建这个对象 的函数 的prototype
+
+// a.通过对象字面量的方式。
+var person={
+    name:"Tom"
+}
+
+// b.通过new的方式创建
+//创建一个构造函数
+function person(name){
+    this.name=name
+}
+//创建一个构造函数的实例
+var person1=new person;
+
+// c.通过Object.creat()方式创建
+
+// 但是本质上3种方法都是通过new的方式创建的。
+
+// 其中通过Object.creat(o)创建出来的对象他的隐式原型指向o。
+// 通过对象字面量的方式创建的对象他的隐式原型指向Object.prototype。
+// 构造函数function person本质上是由Function构造函数创建的，它是Function的一个实例。
+// 原型对象本质上是由Object构造函数创建的。内置函数Array Number等也是有Function构造函数创建的。
+
+//通过new的方式
+person1.__proto__===person.prototype //true
+person.prototype.__proto__===Object.prototype //true
+Object.__proto__===Function.prototype //true
+//内置函数
+Array.__proto__===Function.prototype //true
+Array.prototype.__proto__===Object.prototype //true
+
+// Function的__proto__指向其构造函数Function的prototype；
+// Object作为一个构造函数(是一个函数对象!!函数对象!!),所以他的__proto__指向Function.prototype；
+// Function.prototype的__proto__指向其构造函数Object的prototype；
+// Object.prototype的__prototype__指向null（尽头）；
