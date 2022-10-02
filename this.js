@@ -272,3 +272,35 @@ Array.prototype.__proto__===Object.prototype //true
 // Object作为一个构造函数(是一个函数对象!!函数对象!!),所以他的__proto__指向Function.prototype；
 // Function.prototype的__proto__指向其构造函数Object的prototype；
 // Object.prototype的__prototype__指向null（尽头）；
+
+
+
+
+
+// 箭头函数中的this
+
+const foo={
+    fn:function(){
+        setTimeout(function(){
+            console.log(this)
+        }
+        )
+    }
+}
+console.log(foo.fn())
+// this出现在setTimeout()的匿名函数中，因此this指向window对象
+
+
+如果需要让this指向foo这个对象，则可以巧用箭头函数来解决，代码如下。
+const foo={
+    fn:function(){
+        setTimeout(()=>
+        console.log(foo.fn())
+        )
+    }
+}
+console.log(foo.fn())
+//{fn:f}
+
+// 单纯的箭头函数中的this指向问题非常简单，但是如果综合所有情况，
+// 并结合this的优先级进行考查，那么这时this的指向并不容易确定。
