@@ -304,3 +304,110 @@ console.log(foo.fn())
 
 // 单纯的箭头函数中的this指向问题非常简单，但是如果综合所有情况，
 // 并结合this的优先级进行考查，那么这时this的指向并不容易确定。
+
+
+
+
+// this优先级
+// call\apply\bind\new 对this进行绑定的情况  :显式绑定
+// 而把根据调用关系确定this指向的情况         :隐式绑定
+
+// 他们的优先级？
+function foo(a){
+    console.log(this.a)
+}
+const obj1={
+    a:1,
+    foo:foo
+}
+
+const obj2={
+    a:2,
+    foo:foo
+}
+obj1.foo.call(obj2)
+obj2.foo.call(obj1)
+// 2
+// 1
+
+
+function foo(a){
+    this.a=a
+}
+const obj1={}
+
+var bar=foo.bind(obj1)
+bar(2)
+console.log(obj1.a)
+// 2
+
+// 通过bind将bar函数中的this绑定为obj1对象，
+// 执行bar(2)后，obj1.a值为2，即执行bar(2)后
+// obj1对象为{a:2}
+
+// 当再使用bar作为构造函数时，例如执行以下代码，则会输入3
+var baz=new bar(3)
+console.log(baz.a)
+// 3
+
+// bar函数本身是通过bind方法构造的函数，其内部已经将this绑定为obj1
+// ，当它再次作为构造函数通过new被调用时，返回的实例就已经与obj1解绑了。
+// 也就是说，new绑定修改了bind绑定中的this指向，因此new绑定的优先级比显式bind绑定的更高。
+
+function foo(){
+    return a=>{
+        console.log(this.a)
+    };
+}
+
+const obj1={
+    a:2
+}
+const obj2={
+    a:3
+}
+const bar=foo.call(obj1)
+console.log(bar.call(obj2))
+// 2
+// 以上代码输出结果为2，由于foo中的this绑定到了obj1上，
+// 所以bar（引用箭头函数）中的this也会绑定到obj1上，箭头函数的绑定无法被修改
+
+// 如果将foo完全写成如下所示的箭头函数形式，则会输出123
+
+var a=123
+const foo=()=>a=>{
+    console.log(this.a)
+}
+
+const obj1={
+    a:2
+}
+
+const obj2={
+    a:3
+}
+
+var bar=foo.call(obj1)
+console.log(bar.call(obj2))
+// 123
+
+// 将上述代码中第一处变量a的声明修改一下，即变成如下所示的样子
+const a=123
+const foo=()=>a=>{
+    console.log(this.a)
+}
+
+const obj1={
+    a:2
+}
+
+const obj2={
+    a:3
+}
+
+var bar=foo.call(obj1)
+console.log(bar.call(obj2))
+// undefined
+
+// 使用const 声明的变量不会挂载到window全局对象上。
+// 因此，this指向window时，自然也找不到a变量了。
