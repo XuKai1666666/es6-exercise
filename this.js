@@ -411,3 +411,25 @@ console.log(bar.call(obj2))
 
 // 使用const 声明的变量不会挂载到window全局对象上。
 // 因此，this指向window时，自然也找不到a变量了。
+
+
+
+// 开放例题分析
+//实现一个bind函数
+
+Function.prototype.bind=Function.prototype.bind||function(context){
+    var me=this;
+    var args=Array.prototype.slice.call(arguments,1);
+    return function bound(){
+        var innerArgs=Array.prototype.slice.call(arguments);
+        var finalArgs=args.concat(innerArgs);
+        return me.apply(context,finalArgs);
+    }
+}
+
+// bind返回的函数如果作为构造函数搭配new关键字出现的话，绑定的this就会被忽略
+// 为了实现这样的规则，需要考虑到如何区分这两种调用方式。
+// 要在bound函数中进行this instanceof 判断
+// 函数具有length属性，用来表示形参的个数
+// 形参的个数显然会失真，所以，改进的实现方式需要对length属性进行还原。
+// 函数的length属性值还是不可重写的
