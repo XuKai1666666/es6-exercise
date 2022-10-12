@@ -225,3 +225,214 @@ const shapeType = {
 };
 
 // 上面代码中，除了将shapeType.triangle的值设为一个 Symbol，其他地方都不用修改。
+
+
+
+
+// 实例：模块的 Singleton 模式
+// Singleton 模式指的是调用一个类，任何时候返回的都是同一个实例
+
+// 对于 Node 来说，模块文件可以看成是一个类。
+// 怎么保证每次执行这个模块文件，返回的都是同一个实例呢？
+
+// 很容易想到，可以把实例放到顶层对象global。
+// mod.js
+function A() {
+    this.foo = 'hello';
+}
+
+if (!global._foo) {
+    global._foo = new A();
+}
+
+module.exports = global._foo;
+// 加载上面的mod.js。
+const a = require('./mod.js');
+console.log(a.foo);
+// 变量a任何时候加载的都是A的同一个实例。
+
+
+// 全局变量global._foo是可写的，任何文件都可以修改
+global._foo = { foo: 'world' };
+
+const a = require('./mod.js');
+console.log(a.foo);
+
+// 上面的代码，会使得加载mod.js的脚本都失真。
+
+
+
+// 为了防止这种情况出现，我们就可以使用Symbol
+// mod.js
+const FOO_KEY = Symbol.for('foo');
+
+function A() {
+    this.foo = 'hello';
+}
+
+if (!global[FOO_KEY]) {
+    global[FOO_KEY] = new A();
+}
+
+module.exports = global[FOO_KEY];
+// 上面代码中，可以保证global[FOO_KEY]不会被无意间覆盖，但还是可以被改写。
+global[Symbol.for('foo')] = { foo: 'world' };
+
+const a = require('./mod.js');
+
+// 如果键名使用Symbol方法生成，那么外部将无法引用这个值，当然也就无法改写。
+
+
+// 内置的Symbol值
+// 除了定义自己使用的Symbol值歪，
+// es6 还提供了11个内置的Syboml值，指向语言内保部使用的方法
+
+
+// Symbol.hasInstance
+// 对象的Symbol.hasInstance属性，指向一个内部方法。
+// 当其他对象使用instanceof运算符，判断是否为该对象的实例时，
+// 会调用这个方法。比如，foo instanceof Foo在语言内部，
+// 实际调用的是Foo[Symbol.hasInstance](foo)。
+class MyClass {
+    [Symbol.hasInstance](foo) {
+        return foo instanceof Array;
+    }
+}
+
+[1, 2, 3] instanceof new MyClass() // true
+// 上面代码中，MyClass是一个类，new MyClass()会返回一个实例。
+// 该实例的Symbol.hasInstance方法，
+// 会在进行instanceof运算时自动调用，判断左侧的运算子是否为Array的实例。
+class Even {
+    static [Symbol.hasInstance](obj) {
+        return Number(obj) % 2 === 0;
+    }
+}
+
+// 等同于
+const Even = {
+    [Symbol.hasInstance](obj) {
+        return Number(obj) % 2 === 0;
+    }
+};
+
+1 instanceof Even // false
+2 instanceof Even // true
+12345 instanceof Even // false
+
+
+
+// Symbol.isConcatSpreadable
+// 对象的Symbol.isConcatSpreadable属性等于一个布尔值，
+// 表示该对象用于Array.prototype.concat()时，是否可以展开。
+let arr1 = ['c', 'd'];
+['a', 'b'].concat(arr1, 'e') // ['a', 'b', 'c', 'd', 'e']
+arr1[Symbol.isConcatSpreadable] // undefined
+
+let arr2 = ['c', 'd'];
+arr2[Symbol.isConcatSpreadable] = false;
+['a', 'b'].concat(arr2, 'e') // ['a', 'b', ['c','d'], 'e']
+
+// 上面代码说明，数组的默认行为是可以展开，
+// Symbol.isConcatSpreadable默认等于undefined。
+// 该属性等于true时，也有展开的效果。
+
+// 类似数组的对象正好相反，默认不展开。
+// 它的Symbol.isConcatSpreadable属性设为true，才可以展开。
+
+let obj = { length: 2, 0: 'c', 1: 'd' };
+['a', 'b'].concat(obj, 'e') // ['a', 'b', obj, 'e']
+
+obj[Symbol.isConcatSpreadable] = true;
+['a', 'b'].concat(obj, 'e') // ['a', 'b', 'c', 'd', 'e']
+
+
+
+// Symbol.isConcatSpreadable属性也可以定义在类里面
+class A1 extends Array {
+    constructor(args) {
+        super(args);
+        this[Symbol.isConcatSpreadable] = true;
+    }
+}
+class A2 extends Array {
+    constructor(args) {
+        super(args);
+    }
+    get [Symbol.isConcatSpreadable]() {
+        return false;
+    }
+}
+let a1 = new A1();
+a1[0] = 3;
+a1[1] = 4;
+let a2 = new A2();
+a2[0] = 5;
+a2[1] = 6;
+[1, 2].concat(a1).concat(a2)
+// [1, 2, 3, 4, [5, 6]]
+
+//   类A1是可展开的，类A2是不可展开的，所以使用concat时有不一样的结果。
+// Symbol.isConcatSpreadable的位置差异，
+// A1是定义在实例上，
+// A2是定义在类本身，效果相同。
+
+
+// Symbol.species
+// 对象的Symbol.species属性，指向一个构造函数。创建衍生对象时，会使用该属性。
+class MyArray extends Array {
+}
+
+const a = new MyArray(1, 2, 3);
+const b = a.map(x => x);
+const c = a.filter(x => x > 1);
+
+b instanceof MyArray // true
+c instanceof MyArray // true
+// 上面代码中，子类MyArray继承了父类Array，a是MyArray的实例，
+// b和c是a的衍生对象。你可能会认为，b和c都是调用数组方法生成的，
+// 所以应该是数组（Array的实例），但实际上它们也是MyArray的实例。
+// Symbol.species属性就是为了解决这个问题而提供的。
+// 现在，我们可以为MyArray设置Symbol.species属性。
+
+class MyArray extends Array {
+    static get [Symbol.species]() { return Array; }
+}
+// 由于定义了Symbol.species属性，创建衍生对象时就会使用这个属性返回的函数，
+// 作为构造函数。这个例子也说明，定义Symbol.species属性要采用get取值器。
+// 默认的Symbol.species属性等同于下面的写法。
+static get[Symbol.species]() {
+    return this;
+}
+
+class MyArray extends Array {
+    static get [Symbol.species]() { return Array; }
+}
+
+const a = new MyArray();
+const b = a.map(x => x);
+
+b instanceof MyArray // false
+b instanceof Array // true
+// a.map(x => x)生成的衍生对象，就不是MyArray的实例，而直接就是Array的实例。
+
+
+class T1 extends Promise {
+}
+
+class T2 extends Promise {
+  static get [Symbol.species]() {
+    return Promise;
+  }
+}
+
+new T1(r => r()).then(v => v) instanceof T1 // true
+new T2(r => r()).then(v => v) instanceof T2 // false
+// 上面代码中，T2定义了Symbol.species属性，T1没有。
+// 结果就导致了创建衍生对象时（then方法），
+// T1调用的是自身的构造方法，而T2调用的是Promise的构造方法。
+
+// Symbol.species的作用在于，实例对象在运行过程中，
+// 需要再次调用自身的构造函数时，会调用该属性指定的构造函数。
+// 它主要的用途是，有些类库是在基类的基础上修改的，
+// 那么子类使用继承的方法时，作者可能希望返回基类的实例，而不是子类的实例。
