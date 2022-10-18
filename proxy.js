@@ -531,9 +531,9 @@ var obj = { a: 10 };
 Object.preventExtensions(obj);
 
 var p = new Proxy(obj, {
-  has: function(target, prop) {
-    return false;
-  }
+    has: function (target, prop) {
+        return false;
+    }
 });
 
 'a' in p // TypeError is thrown
@@ -547,17 +547,17 @@ var p = new Proxy(obj, {
 // 即has()方法不判断一个属性是对象自身的属性，还是继承的属性。
 
 // 另外，虽然for...in循环也用到了in运算符，但是has()拦截对for...in循环不生效。
-let stu1 = {name: '张三', score: 59};
-let stu2 = {name: '李四', score: 99};
+let stu1 = { name: '张三', score: 59 };
+let stu2 = { name: '李四', score: 99 };
 
 let handler = {
-  has(target, prop) {
-    if (prop === 'score' && target[prop] < 60) {
-      console.log(`${target.name} 不及格`);
-      return false;
+    has(target, prop) {
+        if (prop === 'score' && target[prop] < 60) {
+            console.log(`${target.name} 不及格`);
+            return false;
+        }
+        return prop in target;
     }
-    return prop in target;
-  }
 }
 
 let oproxy1 = new Proxy(stu1, handler);
@@ -571,16 +571,80 @@ let oproxy2 = new Proxy(stu2, handler);
 // true
 
 for (let a in oproxy1) {
-  console.log(oproxy1[a]);
+    console.log(oproxy1[a]);
 }
 // 张三
 // 59
 
 for (let b in oproxy2) {
-  console.log(oproxy2[b]);
+    console.log(oproxy2[b]);
 }
 // 李四
 // 99
 
 // 上面代码中，has()拦截只对in运算符生效，
 // 对for...in循环不生效，导致不符合要求的属性没有被for...in循环所排除。
+
+
+
+// construct()
+// construct()方法用于拦截new命令，下面是拦截对象的写法。
+const handler = {
+    construct(target, args, newTarget) {
+        return new target(...args);
+    }
+};
+
+// construct()方法可以接受三个参数。
+
+// target：目标对象。
+// args：构造函数的参数数组。
+// newTarget：创造实例对象时，new命令作用的构造函数（下面例子的p）。
+
+const p = new Proxy(function () { }, {
+    construct: function (target, args) {
+        console.log('called: ' + args.join(', '));
+        return { value: args[0] * 10 };
+    }
+});
+
+(new p(1)).value
+// "called: 1"
+// 10
+
+// construct()方法返回的必须是一个对象，否则会报错。
+
+const p = new Proxy(function () { }, {
+    construct: function (target, argumentsList) {
+        return 1;
+    }
+});
+
+new p() // 报错
+// Uncaught TypeError: 'construct' on proxy: trap returned non-object ('1')
+
+
+// 由于construct()拦截的是构造函数，所以它的目标对象必须是函数，否则就会报错。
+const p = new Proxy({}, {
+    construct: function (target, argumentsList) {
+        return {};
+    }
+});
+
+new p() // 报错
+// Uncaught TypeError: p is not a constructor
+
+//   上面例子中，拦截的目标对象不是一个函数，
+//   而是一个对象（new Proxy()的第一个参数），导致报错。
+
+
+// construct()方法中的this指向的是handler，而不是实例对象。
+const handler = {
+    construct: function (target, args) {
+        console.log(this === handler);
+        return new target(...args);
+    }
+}
+
+let p = new Proxy(function () { }, handler);
+new p() // true
