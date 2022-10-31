@@ -162,18 +162,18 @@ fs.readFile(fileA, 'utf-8', function (err, data) {
 var readFile = require('fs-readfile-promise');
 
 readFile(fileA)
-.then(function (data) {
-  console.log(data.toString());
-})
-.then(function () {
-  return readFile(fileB);
-})
-.then(function (data) {
-  console.log(data.toString());
-})
-.catch(function (err) {
-  console.log(err);
-});
+    .then(function (data) {
+        console.log(data.toString());
+    })
+    .then(function () {
+        return readFile(fileB);
+    })
+    .then(function (data) {
+        console.log(data.toString());
+    })
+    .catch(function (err) {
+        console.log(err);
+    });
 
 // 上面代码中，我使用了fs-readfile-promise模块，
 // 它的作用就是返回一个 Promise 版本的readFile函数。
@@ -186,4 +186,31 @@ readFile(fileA)
 // 不管什么操作，一眼看去都是一堆then，原来的语义变得很不清楚。
 
 
+// Generator 函数
+// 协程
+// 传统的编程语言，早有异步编程的解决方案（其实是多任务的解决方案）。
+// 其中有一种叫做"协程"（coroutine），意思是多个线程互相协作，完成异步任务。
 
+// 协程有点像函数，又有点像线程。它的运行流程大致如下。
+
+// 第一步，协程A开始执行。
+// 第二步，协程A执行到一半，进入暂停，执行权转移到协程B。
+// 第三步，（一段时间后）协程B交还执行权。
+// 第四步，协程A恢复执行。
+// 上面流程的协程A，就是异步任务，因为它分成两段（或多段）执行。
+
+// 举例来说，读取文件的协程写法如下。
+
+function* asyncJob() {
+    // ...其他代码
+    var f = yield readFile(fileA);
+    // ...其他代码
+}
+
+
+// 上面代码的函数asyncJob是一个协程，它的奥妙就在其中的yield命令。
+// 它表示执行到此处，执行权将交给其他协程。
+// 也就是说，yield命令是异步两个阶段的分界线。
+
+// 协程遇到yield命令就暂停，等到执行权返回，再从暂停的地方继续往后执行。它的最大优点，
+// 就是代码的写法非常像同步操作，如果去除yield命令，简直一模一样。
