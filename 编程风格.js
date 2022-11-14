@@ -315,3 +315,106 @@ for (let value of map.values()) {
 for (let item of map.entries()) {
   console.log(item[0], item[1]);
 }
+
+
+
+// Class
+// 总是用 Class，取代需要 prototype 的操作。
+// 因为 Class 的写法更简洁，更易于理解。
+
+// bad
+function Queue(contents = []) {
+  this._queue = [...contents];
+}
+Queue.prototype.pop = function() {
+  const value = this._queue[0];
+  this._queue.splice(0, 1);
+  return value;
+}
+
+// good
+class Queue {
+  constructor(contents = []) {
+    this._queue = [...contents];
+  }
+  pop() {
+    const value = this._queue[0];
+    this._queue.splice(0, 1);
+    return value;
+  }
+}
+// 使用extends实现继承，因为这样更简单，不会有破坏instanceof运算的危险。
+
+// bad
+const inherits = require('inherits');
+function PeekableQueue(contents) {
+  Queue.apply(this, contents);
+}
+inherits(PeekableQueue, Queue);
+PeekableQueue.prototype.peek = function() {
+  return this._queue[0];
+}
+
+// good
+class PeekableQueue extends Queue {
+  peek() {
+    return this._queue[0];
+  }
+}
+
+
+// 模块
+// ES6 模块语法是 JavaScript 模块的标准写法，坚持使用这种写法，
+// 取代 Node.js 的 CommonJS 语法。
+
+// 首先，使用import取代require()。
+
+// CommonJS 的写法
+const moduleA = require('moduleA');
+const func1 = moduleA.func1;
+const func2 = moduleA.func2;
+
+// ES6 的写法
+import { func1, func2 } from 'moduleA';
+// 其次，使用export取代module.exports。
+
+// commonJS 的写法
+var React = require('react');
+
+var Breadcrumbs = React.createClass({
+  render() {
+    return <nav />;
+  }
+});
+
+module.exports = Breadcrumbs;
+
+// ES6 的写法
+import React from 'react';
+
+class Breadcrumbs extends React.Component {
+  render() {
+    return <nav />;
+  }
+};
+
+export default Breadcrumbs;
+// 如果模块只有一个输出值，就使用export default，
+// 如果模块有多个输出值，除非其中某个输出值特别重要，
+// 否则建议不要使用export default，即多个输出值如果是平等关系，
+// export default与普通的export就不要同时使用。
+
+// 如果模块默认输出一个函数，函数名的首字母应该小写，表示这是一个工具方法。
+
+function makeStyleGuide() {
+}
+
+export default makeStyleGuide;
+// 如果模块默认输出一个对象，对象名的首字母应该大写，表示这是一个配置值对象。
+
+const StyleGuide = {
+  es6: {
+  }
+};
+
+export default StyleGuide;
